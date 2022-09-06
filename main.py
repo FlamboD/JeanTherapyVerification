@@ -16,7 +16,7 @@ class MyBot(discord.Client):
     async def on_ready(self):
         await self.wait_until_ready()
         if not self.synced:
-            await tree.sync(guild=discord.Object(id=os.environ["GUILD_ID"]))
+            await tree.sync()#guild=discord.Object(id=os.environ["GUILD_ID"]))
             self.synced = True
         print(f"Logged in as {self.user}")
 
@@ -28,7 +28,7 @@ tree = discord.app_commands.CommandTree(bot)
 @tree.command(
     name="username",
     description="Get torn username of a member",
-    guild=discord.Object(id=os.environ["GUILD_ID"])
+    #guild=discord.Object(id=os.environ["GUILD_ID"])
 )
 async def username(
         interaction: discord.Interaction,
