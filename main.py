@@ -39,7 +39,7 @@ async def username(
         user_info = await _get(f"https://api.torn.com/user/{member.id}/?key={key}&selections=basic")
         if "error" in user_info:
             if user_info["error"]["code"] == 6:
-                return await interaction.response.send_message(f"{member.display_name}'s discord account isn't liked to a torn account", ephemeral=ephemeral)
+                return await interaction.response.send_message(f"{member.display_name}'s discord account isn't liked to a torn account. https://www.torn.com/discord", ephemeral=ephemeral)
             return await interaction.response.send_message("There was an error getting the user's data, please try again in a minute", ephemeral=True)
         return await interaction.response.send_message(f"{member.display_name}'s torn username is `{user_info['name']} [{user_info['player_id']}]`", ephemeral=ephemeral)
     except TornAPIError:
