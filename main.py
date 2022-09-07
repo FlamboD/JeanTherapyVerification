@@ -125,11 +125,15 @@ class Confirmation(View):
         return inner
 
 class Join(View):
-    def __init__(self, cb_join, *, timeout = 180):
+    def __init__(self, cb_join, cb_mobile=None, *, timeout = 180):
         super().__init__(timeout=timeout)
         self.join = Button(label="Join", style=discord.ButtonStyle.blurple)
         self.join.callback = self.callback(cb_join)
         self.add_item(self.join)
+        if cb_mobile:
+            self.mobile_format = Button(label="Mobile format", style=discord.ButtonStyle.grey)
+            self.mobile_format.callback = self.callback(cb_mobile)
+            self.add_item(self.mobile_format)
 
     @staticmethod
     def callback(cb):
@@ -143,7 +147,7 @@ class Giveaway:
         self.author = author
         self.channel = channel
         self.end_time = datetime.now() + timedelta(seconds=seconds)
-        self.message: typing.Optional[discord.Message] = None
+        self.message: typing.Optional[discord.WebhookMessage] = None
         self.participants = []
         self.prize = prize
         self.seconds = seconds
@@ -151,7 +155,7 @@ class Giveaway:
         self.winners = winners
 
     async def confirm(self):
-        print(f"{self.author.display_name} has started a giveaway for {self.prize} for {self.winners} winners running for {self.seconds//3600}h{self.seconds//60%60}m")
+        print(f"{datetime.now()} - {self.author.display_name} has started a giveaway for {self.prize} for {self.winners} winners running for {self.seconds//3600}h{self.seconds//60%60}m")
         timeout = 180
         await self.webhook.send(
             f"please confirm that everything is correct?\n*This view will expire* <t:{int((datetime.now() + timedelta(seconds=timeout)).timestamp())}:R>",
@@ -161,7 +165,7 @@ class Giveaway:
         )
 
     async def send_starting_embed(self):
-        self.message = await self.webhook.send(embed=self.embed(), view=Join(self.cb_join))
+        self.message = await self.webhook.send(embed=self.embed(), view=Join(self.cb_join, self.cb_mobile))
 
     async def end(self):
         global giveaways
@@ -211,10 +215,9 @@ class Giveaway:
             except discord.HTTPException:
                 message = await self.channel.fetch_message(message.id)
 
-
-
     async def update_message(self):
-        await self.message.edit(embed=self.embed(), view=Join(self.cb_join))
+        await self.message.edit(embed=self.embed(), view=Join(self.cb_join, self.cb_mobile))
+        self.message = await self.message.fetch()
 
     async def bring_to_front(self):
         await self.message.delete()
@@ -230,14 +233,23 @@ class Giveaway:
             f"This giveaway ends <t:{int(self.end_time.timestamp())}:R>\n" \
             f"Update <t:{int((datetime.now() + timedelta(seconds=15)).timestamp())}:R> :jeans:"
 
-    def embed(self) -> discord.Embed:
+    def embed_content_mobile(self):
+        return \
+            f"```autohotkey\n" \
+            f"Prize: {self.prize}\n" \
+            f"Participants: {len(self.participants)}\n" \
+            f"Possible winners: {self.winners}\n" \
+            f"```" \
+            f"This giveaway ends at <t:{int(self.end_time.timestamp())}:t> :jeans:"
+
+    def embed(self, mobile=False) -> discord.Embed:
         return discord.Embed(
             color=JEAN_COLOR,
             title="GIVEAWAY",
             description="We're back with another game of \"Who Can Fit Into Theeeeeese Jeans?!\"\nJoin if you think you can pull it up"
         ).add_field(
             name=f"{self.author.display_name} has started a giveaway!",
-            value=self.embed_content()
+            value=self.embed_content_mobile() if mobile else self.embed_content()
         )
 
     async def cb_yes(self, interaction: discord.Interaction):
@@ -270,6 +282,10 @@ class Giveaway:
             "Let's see if you manage to get them on\n"
             "*You have been entered into the giveaway*",
             ephemeral=True)
+
+    async def cb_mobile(self, interaction: discord.Interaction):
+        await interaction.response.send_message(embed=self.embed(True), ephemeral=True)
+
 
 
 
