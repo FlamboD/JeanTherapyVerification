@@ -228,18 +228,6 @@ class Giveaway:
         await self.message.delete()
         await self.send_starting_embed()
 
-    """
-    def embed_content(self):
-        return \
-            f"```ansi\n" \
-            f"{ANSI.Blue}Prize{ANSI.Green}:{ANSI.Reset} {self.prize}\n" \
-            f"{ANSI.Blue}Participants{ANSI.Green}:{ANSI.Reset} {len(self.participants)}\n" \
-            f"{ANSI.Blue}Possible winners{ANSI.Green}:{ANSI.Reset} {self.winners}\n" \
-            f"```" \
-            f"This giveaway ends <t:{int(self.end_time.timestamp())}:R>\n" \
-            f"Update <t:{int((datetime.now() + timedelta(seconds=15)).timestamp())}:R> :jeans:"
-    """
-
     def embed_content(self):
         return \
             f"```autohotkey\n" \
