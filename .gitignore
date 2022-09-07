@@ -5,3 +5,5 @@ Dockerfile
 */.env
 test.py
 */test.py
+*Log.txt
+*/*Log.txt
