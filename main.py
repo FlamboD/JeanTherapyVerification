@@ -11,12 +11,13 @@ import discord
 import dotenv
 import os
 import re
+import typing
 
 dotenv.load_dotenv()
 
 class MyBot(discord.Client):
     def __init__(self):
-        intents = discord.Intents(message_content=True).default()
+        intents = discord.Intents(message_content=True, messages=True).default()
         super().__init__(intents=intents)
         self.synced = False
 
@@ -51,6 +52,9 @@ class ANSI:
     White = "\u001b[37m"
     Reset = "\u001b[0m"
 
+@tree.error
+async def on_error(interaction: discord.Interaction, error: discord.app_commands.CommandInvokeError):
+    raise error
 
 @tree.command(
     name="teams",
@@ -127,7 +131,8 @@ class Join(View):
         self.join.callback = self.callback(cb_join)
         self.add_item(self.join)
 
-    def callback(self, cb):
+    @staticmethod
+    def callback(cb):
         async def inner(interaction: discord.Interaction):
             await cb(interaction)
         return inner
@@ -138,7 +143,7 @@ class Giveaway:
         self.author = author
         self.channel = channel
         self.end_time = datetime.now() + timedelta(seconds=seconds)
-        self.message: discord.Message = None
+        self.message: typing.Optional[discord.Message] = None
         self.participants = []
         self.prize = prize
         self.seconds = seconds
@@ -146,6 +151,7 @@ class Giveaway:
         self.winners = winners
 
     async def confirm(self):
+        print(f"{self.author.display_name} has started a giveaway for {self.prize} for {self.winners} winners running for {self.seconds//3600}h{self.seconds//60%60}m")
         timeout = 180
         await self.webhook.send(
             f"please confirm that everything is correct?\n*This view will expire* <t:{int((datetime.now() + timedelta(seconds=timeout)).timestamp())}:R>",
@@ -166,7 +172,7 @@ class Giveaway:
             title="GIVEAWAY ENDED",
             description=f"Let's find out who pulled their jeans up first and won `{self.prize}` from {self.author.display_name}")
 
-        message: discord.Message = await self.webhook.send(
+        message: typing.Optional[discord.Message] = await self.webhook.send(
             f"Results <t:{int((datetime.now() + timedelta(seconds=5)).timestamp())}:R>",
             embed=embed_base.copy().add_field(
                 name="Let's see who got their jeans up first",
@@ -186,19 +192,25 @@ class Giveaway:
             try:
                 data = await _get(TornAPI(key()).user(member.id, basic=True))
                 arr_winners.append(f"- {member.display_name} [[Torn Profile](https://www.torn.com/profiles.php?XID={data['player_id']})]")
-            except:
+            except (TornAPIError, KeyError):
                 arr_winners.append(f"- {member.display_name}")
 
         if len(arr_winners) == 0:
             arr_winners.append("No winners? Maybe these jeans were a bit too skinny :jeans:")
 
-        await message.edit(
-            content=None,
-            embed=embed_base.copy().add_field(
-                name="The winners are",
-                value="\n".join(arr_winners)
-            )
-        )
+        while True:
+            try:
+                await message.edit(
+                    content=None,
+                    embed=embed_base.copy().add_field(
+                        name="The winners are",
+                        value="\n".join(arr_winners)
+                    )
+                )
+                break
+            except discord.HTTPException:
+                message = await self.channel.fetch_message(message.id)
+
 
 
     async def update_message(self):
