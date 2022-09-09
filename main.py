@@ -1,4 +1,5 @@
 import asyncio
+import enum
 from datetime import datetime, timedelta
 import random
 
@@ -39,8 +40,37 @@ bot = MyBot()
 tree = app_commands.CommandTree(bot)
 JEAN_COLOR = int("2243B6", 16)
 chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+elim_teams = [
+    "Firestarters",
+    "Laughing Stock",
+    "Hard Boiled",
+    "Jean Therapy",
+    "Dirty Cops",
+    "Wolf Pack",
+    "Rawring Thunder",
+    "Rain Men",
+    "Satan's Soldiers",
+    "Sleepyheads",
+    "Totally Boned",
+    "Quack Addicts"
+]
 giveaway_endings = ["Checking for rips", "Measuring booty circumference", "Checking if these are straight or skinny", "Testing the denim"]
 giveaways = []
+
+class EliminationTeams(enum.Enum):
+    Dirty_Cops = 0
+    Firestarters = 1
+    Hard_Boiled = 2
+    Jean_Therapy = 3
+    Laughing_Stock = 4
+    Rawring_Thunder = 5
+    Rain_Men = 6
+    Satans_Soldiers = 7
+    Sleepyheads = 8
+    Totally_Boned = 9
+    Quack_Addicts = 10
+    Wolf_Pack = 11
+
 
 class ANSI:
     Black = "\u001b[30m"
@@ -206,17 +236,18 @@ class Giveaway:
             await message.edit(
                 content=None,
                 embed=embed_base.copy().add_field(
-                    name="The winners are",
+                    name=f"Out of the {len(self.participants)} who entered, the winners are",
                     value="\n".join(arr_winners)
                 )
             )
         except discord.HTTPException:
             await self.channel.send(
                 embed=embed_base.copy().add_field(
-                    name="The winners are",
+                    name=f"Out of the {len(self.participants)} who entered, the winners are",
                     value="\n".join(arr_winners)
                 )
             )
+        self.log(f"Giveaway ended with {len(self.participants)} participants, the winners are {', '.join([_.display_name for _ in winners])}")
 
     async def update_message(self):
         try:
@@ -304,7 +335,7 @@ def number_autocomplete(_min, _max):
 
 @tree.command(
     name="giveaway",
-    description="creates a giveaway",
+    description="Creates a giveaway",
     guilds=[discord.Object(id=_) for _ in os.environ["GUILD_IDS"].split(",")]
 )
 @app_commands.autocomplete(runtime=time_autocomplete, winners=number_autocomplete(1, 20))
@@ -337,6 +368,14 @@ async def giveaway_to_front(interaction: discord.Interaction, message: discord.M
             return await interaction.response.send_message("Giveaway has been moved to the end of the channel", ephemeral=True)
     return await interaction.response.send_message("This doesn't seem to be an active giveaway", ephemeral=True)
 
+
+@tree.command(
+    name="attacks",
+    guilds=[discord.Object(id=_) for _ in os.environ["GUILD_IDS"].split(",")]
+)
+async def attacks(interaction: discord.Interaction, team: EliminationTeams, type: typing.Literal["incoming", "outgoing"]):
+    print(team.name, type)
+    await interaction.response.send_message("NOT IMPLEMENTED", ephemeral=True)
 
 
 
