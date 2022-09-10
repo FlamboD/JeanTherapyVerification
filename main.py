@@ -85,6 +85,9 @@ class ANSI:
 
 @tree.error
 async def on_error(interaction: discord.Interaction, error: discord.app_commands.CommandInvokeError):
+    print("ON_ERROR")
+    if isinstance(error, discord.Forbidden):
+        await interaction.response.send_messagee("I do not have permission to complete ths action")
     raise error
 
 @tree.command(
@@ -194,7 +197,13 @@ class Giveaway:
         )
 
     async def send_starting_embed(self):
-        self.message = await self.channel.send(embed=self.embed(), view=Join(self.cb_join))
+        global giveaways
+        try:
+            self.message = await self.channel.send(embed=self.embed(), view=Join(self.cb_join))
+        except discord.Forbidden:
+            await self.webhook.send("I am missing the permissions to execute this command", ephemeral=True)
+            self.log("Permission denied, canceling giveaway")
+            giveaways.remove(self)
 
     async def end(self):
         global giveaways
@@ -376,6 +385,18 @@ async def giveaway_to_front(interaction: discord.Interaction, message: discord.M
 async def attacks(interaction: discord.Interaction, team: EliminationTeams, type: typing.Literal["incoming", "outgoing"]):
     print(team.name, type)
     await interaction.response.send_message("NOT IMPLEMENTED", ephemeral=True)
+
+
+@tree.command(
+    name="permissions",
+    guilds=[discord.Object(id=618520031210373141)]
+)
+async def permissions(interaction: discord.Interaction):
+    member = interaction.guild.get_member(bot.user.id)
+    _p = interaction.channel.permissions_for(member)
+    _a = discord.Permissions.all()
+    print(list(list(set(_a) - set(_p))))
+    await interaction.response.send_message("CHECK CONSOLE", ephemeral=True)
 
 
 

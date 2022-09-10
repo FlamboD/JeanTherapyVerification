@@ -7,3 +7,7 @@ test.py
 */test.py
 *Log.txt
 */*Log.txt
+*.html
+*.sqlite
+/__pycache__
+/.idea
