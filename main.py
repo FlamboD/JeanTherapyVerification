@@ -1,5 +1,6 @@
 import asyncio
 import enum
+import sqlite3
 from datetime import datetime, timedelta
 import random
 
@@ -40,36 +41,51 @@ bot = MyBot()
 tree = app_commands.CommandTree(bot)
 JEAN_COLOR = int("2243B6", 16)
 chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-elim_teams = [
-    "Firestarters",
-    "Laughing Stock",
-    "Hard Boiled",
-    "Jean Therapy",
-    "Dirty Cops",
-    "Wolf Pack",
-    "Rawring Thunder",
-    "Rain Men",
-    "Satan's Soldiers",
-    "Sleepyheads",
-    "Totally Boned",
-    "Quack Addicts"
-]
+# elim_teams = [
+#     "Firestarters",
+#     "Laughing Stock",
+#     "Hard Boiled",
+#     "Jean Therapy",
+#     "Dirty Cops",
+#     "Wolf Pack",
+#     "Rawring Thunder",
+#     "Rain Men",
+#     "Satan's Soldiers",
+#     "Sleepyheads",
+#     "Totally Boned",
+#     "Quack Addicts"
+# ]
+# elim_teams = {
+#     "Firestarters",
+#     "Laughing Stock",
+#     "Hard Boiled",
+#     "Jean Therapy",
+#     "Dirty Cops",
+#     "Wolf Pack",
+#     "Rawring Thunder",
+#     "Rain Men",
+#     "Satan's Soldiers",
+#     "Sleepyheads",
+#     "Totally Boned",
+#     "Quack Addicts"
+# }
 giveaway_endings = ["Checking for rips", "Measuring booty circumference", "Checking if these are straight or skinny", "Testing the denim"]
 giveaways = []
 
 class EliminationTeams(enum.Enum):
-    Dirty_Cops = 0
-    Firestarters = 1
-    Hard_Boiled = 2
-    Jean_Therapy = 3
-    Laughing_Stock = 4
-    Rawring_Thunder = 5
-    Rain_Men = 6
-    Satans_Soldiers = 7
-    Sleepyheads = 8
-    Totally_Boned = 9
-    Quack_Addicts = 10
-    Wolf_Pack = 11
+    Dirty_Cops = 'dirty-cops'
+    Firestarters = 'firestarters'
+    Hard_Boiled = 'hard-boiled'
+    Jean_Therapy = 'jean-therapy'
+    Laughing_Stock = 'laughing-stock'
+    Rawring_Thunder = 'rawring-thunder'
+    Rain_Men = 'rain-men'
+    Satans_Soldiers = 'satants-soldiers'
+    Sleepyheads = 'sleepyheads'
+    Totally_Boned = 'totally-boned'
+    Quack_Addicts = 'quack-addicts'
+    Wolf_Pack = 'wolf-pack'
+    Unknown = 'unknown'
 
 
 class ANSI:
@@ -378,15 +394,64 @@ async def giveaway_to_front(interaction: discord.Interaction, message: discord.M
     return await interaction.response.send_message("This doesn't seem to be an active giveaway", ephemeral=True)
 
 
+class SQL:
+    PATH = "attacks.sqlite"
+
+    def __init__(self):
+        self.conn = sqlite3.connect(self.PATH)
+
+    @staticmethod
+    def past_hour():
+        end = datetime.replace(datetime.now(), minute=0, second=0, microsecond=0)
+        start = end - timedelta(hours=1)
+        return [start, end]
+
+    def get_attacks(self, team=EliminationTeams.Jean_Therapy.value, incoming=True):
+        sql = f"SELECT * FROM attacks WHERE time > ? AND time < ? AND {'defender' if incoming else 'attacker'} = ?"
+        cur = self.conn.execute(sql, [*self.past_hour(), team])
+        return cur.fetchall()
+
+
 @tree.command(
     name="attacks",
     guilds=[discord.Object(id=_) for _ in os.environ["GUILD_IDS"].split(",")]
 )
-async def attacks(interaction: discord.Interaction, team: EliminationTeams, type: typing.Literal["incoming", "outgoing"]):
-    print(team.name, type)
-    await interaction.response.send_message("NOT IMPLEMENTED", ephemeral=True)
+async def attacks(interaction: discord.Interaction, team: EliminationTeams, type: typing.Literal["incoming", "outgoing", "both"]):
+    def title(name: EliminationTeams):
+        return name.name.replace('-', ' ').title()
+
+    embed = discord.Embed(color=JEAN_COLOR, title=f"{title(team)}", description="Attacks between " + " and ".join([f"<t:{int(_.timestamp())}:T>" for _ in SQL.past_hour()]))
+    incoming = None
+    outgoing = None
+    if type == 'both':
+        incoming = SQL().get_attacks(team.value, True)
+        outgoing = SQL().get_attacks(team.value, False)
+    elif type == 'incoming':
+        incoming = SQL().get_attacks(team.value, True)
+    else:
+        outgoing = SQL().get_attacks(team.value, False)
+
+    br = "\n"
+    if incoming is not None:
+        embed.add_field(
+            name="Incoming",
+            value=f"```py\n"
+                  f"{br.join([f'{title(_)}: {len([__ for __ in incoming if __[1] == _.value])}' for _ in EliminationTeams if _ != team])}"
+                  f"```"
+        )
+
+    if outgoing is not None:
+        embed.add_field(
+            name="Outgoing",
+            value=f"```py\n"
+                  f"{br.join([f'{title(_)}: {len([__ for __ in outgoing if __[2] == _.value])}' for _ in EliminationTeams if _ != team])}"
+                  f"```"
+        )
+
+    await interaction.response.send_message(embed=embed)
 
 
+"""
 @tree.command(
     name="permissions",
     guilds=[discord.Object(id=618520031210373141)]
@@ -397,7 +462,7 @@ async def permissions(interaction: discord.Interaction):
     _a = discord.Permissions.all()
     print(list(list(set(_a) - set(_p))))
     await interaction.response.send_message("CHECK CONSOLE", ephemeral=True)
-
+"""
 
 
 def key() -> str:
