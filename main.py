@@ -26,10 +26,9 @@ class MyBot(discord.Client):
     async def on_ready(self):
         await self.wait_until_ready()
         if not self.synced:
-            for guild_id in os.environ["GUILD_IDS"].split(","):
-                try:
-                    await tree.sync(guild=discord.Object(id=guild_id))
-                except discord.Forbidden: pass
+            try:
+                await tree.sync()
+            except discord.Forbidden: pass
             self.synced = True
         print(f"Logged in as {self.user}")
         update_giveaway_embeds.start()
@@ -41,34 +40,6 @@ bot = MyBot()
 tree = app_commands.CommandTree(bot)
 JEAN_COLOR = int("2243B6", 16)
 chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-# elim_teams = [
-#     "Firestarters",
-#     "Laughing Stock",
-#     "Hard Boiled",
-#     "Jean Therapy",
-#     "Dirty Cops",
-#     "Wolf Pack",
-#     "Rawring Thunder",
-#     "Rain Men",
-#     "Satan's Soldiers",
-#     "Sleepyheads",
-#     "Totally Boned",
-#     "Quack Addicts"
-# ]
-# elim_teams = {
-#     "Firestarters",
-#     "Laughing Stock",
-#     "Hard Boiled",
-#     "Jean Therapy",
-#     "Dirty Cops",
-#     "Wolf Pack",
-#     "Rawring Thunder",
-#     "Rain Men",
-#     "Satan's Soldiers",
-#     "Sleepyheads",
-#     "Totally Boned",
-#     "Quack Addicts"
-# }
 giveaway_endings = ["Checking for rips", "Measuring booty circumference", "Checking if these are straight or skinny", "Testing the denim"]
 giveaways = []
 
@@ -103,14 +74,15 @@ class ANSI:
 async def on_error(interaction: discord.Interaction, error: discord.app_commands.CommandInvokeError):
     print("ON_ERROR")
     if isinstance(error, discord.Forbidden):
-        await interaction.response.send_messagee("I do not have permission to complete ths action")
-    raise error
+        await interaction.response.send_messagee("I do not have permission to complete ths action", ephemeral=True)
+    # raise error
+
 
 @tree.command(
     name="teams",
-    description="Shows the name of each team, their number of tickets, lives, and member count",
-    guilds=[discord.Object(id=_) for _ in os.environ["GUILD_IDS"].split(",")]
+    description="Shows the name of each team, their number of tickets, lives, and member count"
 )
+@app_commands.checks.cooldown(2, 60, key=lambda i: i.guild_id)
 async def teams(interaction: discord.Interaction):
     try:
         embed = discord.Embed(colour=JEAN_COLOR, title="Elimination Teams")
@@ -144,6 +116,10 @@ async def teams(interaction: discord.Interaction):
             "An unexpected error occurred, please try again",
             ephemeral=True)
 
+@teams.error
+async def on_teams_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.CommandOnCooldown):
+        await interaction.response.send_message(str(error), ephemeral=True)
 
 @tasks.loop(seconds=15)
 async def update_giveaway_embeds():
@@ -360,8 +336,7 @@ def number_autocomplete(_min, _max):
 
 @tree.command(
     name="giveaway",
-    description="Creates a giveaway",
-    guilds=[discord.Object(id=_) for _ in os.environ["GUILD_IDS"].split(",")]
+    description="Creates a giveaway"
 )
 @app_commands.autocomplete(runtime=time_autocomplete, winners=number_autocomplete(1, 20))
 async def giveaway(interaction: discord.Interaction, prize: str, runtime: str, winners: int = 1):
@@ -382,8 +357,7 @@ async def giveaway(interaction: discord.Interaction, prize: str, runtime: str, w
 
 
 @tree.context_menu(
-    name="Bring giveaway to front",
-    guilds=[discord.Object(id=_) for _ in os.environ["GUILD_IDS"].split(",")]
+    name="Bring giveaway to front"
 )
 async def giveaway_to_front(interaction: discord.Interaction, message: discord.Message):
     global giveaways
@@ -402,8 +376,11 @@ class SQL:
 
     @staticmethod
     def past_hour():
-        end = datetime.replace(datetime.now(), minute=0, second=0, microsecond=0)
-        start = end - timedelta(hours=1)
+        if datetime.now().minute < 30:
+            end = datetime.replace(datetime.now(), minute=0, second=0, microsecond=0)
+        else:
+            end = datetime.replace(datetime.now(), minute=30, second=0, microsecond=0)
+        start = end - timedelta(minutes=30)
         return [start, end]
 
     def get_attacks(self, team=EliminationTeams.Jean_Therapy.value, incoming=True):
@@ -414,8 +391,9 @@ class SQL:
 
 @tree.command(
     name="attacks",
-    guilds=[discord.Object(id=_) for _ in os.environ["GUILD_IDS"].split(",")]
+    description="Display incoming/outgoing attacks for a team"
 )
+@app_commands.checks.cooldown(5, 60, key=lambda i: i.guild_id)
 async def attacks(interaction: discord.Interaction, team: EliminationTeams, type: typing.Literal["incoming", "outgoing", "both"]):
     def title(name: EliminationTeams):
         return name.name.replace('-', ' ').title()
@@ -450,19 +428,10 @@ async def attacks(interaction: discord.Interaction, team: EliminationTeams, type
 
     await interaction.response.send_message(embed=embed)
 
-
-"""
-@tree.command(
-    name="permissions",
-    guilds=[discord.Object(id=618520031210373141)]
-)
-async def permissions(interaction: discord.Interaction):
-    member = interaction.guild.get_member(bot.user.id)
-    _p = interaction.channel.permissions_for(member)
-    _a = discord.Permissions.all()
-    print(list(list(set(_a) - set(_p))))
-    await interaction.response.send_message("CHECK CONSOLE", ephemeral=True)
-"""
+@attacks.error
+async def on_attacks_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.CommandOnCooldown):
+        await interaction.response.send_message(str(error), ephemeral=True)
 
 
 def key() -> str:
