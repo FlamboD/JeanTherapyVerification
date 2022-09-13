@@ -17,6 +17,8 @@ class WatchGod(commands.Cog):
                         fn = c[1].split("\\")[-1].replace('.py', '')
                         cfn = f'cogs.{fn}'
 
+                        print(f"{cfn} - {cfn in self.bot.extensions} - {c[0]}")
+
                         if cfn not in self.bot.extensions:
                             if not c[0] == c[0].deleted:
                                 await self.bot.load_extension(cfn)
