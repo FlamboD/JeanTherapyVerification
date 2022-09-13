@@ -126,7 +126,7 @@ class Elimination(commands.Cog):
                 value=f"```py\n"
                       f"{br.join([f'{title(_)}: {len([__ for __ in incoming if __[1] == _.value])}' for _ in EliminationTeams if _ != team])}"
                       f"{br}{br}"
-                      f"Total: {sum([int(_[1]) for _ in incoming])}"
+                      f"Total: {len(incoming)}"
                       f"```"
             )
         print("D")
@@ -136,7 +136,7 @@ class Elimination(commands.Cog):
                 value=f"```py\n"
                       f"{br.join([f'{title(_)}: {len([__ for __ in outgoing if __[2] == _.value])}' for _ in EliminationTeams if _ != team])}"
                       f"{br}{br}"
-                      f"Total: {sum([int(_[1]) for _ in outgoing])}"
+                      f"Total: {len(outgoing)}"
                       f"```"
             )
         print("F")
