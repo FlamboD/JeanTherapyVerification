@@ -129,6 +129,7 @@ class Elimination(commands.Cog):
                       f"```"
             )
         print("D")
+        print(outgoing[0])
         if outgoing is not None:
             embed.add_field(
                 name="Outgoing",
