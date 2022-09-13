@@ -10,3 +10,5 @@ idna==3.3
 multidict==6.0.2
 python-dotenv==0.21.0
 yarl==1.8.1
+watchgod~=0.8.2
+websockets~=10.3
