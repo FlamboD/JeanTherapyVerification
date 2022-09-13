@@ -119,6 +119,7 @@ class Elimination(commands.Cog):
             outgoing = SQL().get_attacks(team.value, False)
         print("C")
         br = "\n"
+        print(incoming[0])
         if incoming is not None:
             embed.add_field(
                 name="Incoming",
@@ -129,7 +130,6 @@ class Elimination(commands.Cog):
                       f"```"
             )
         print("D")
-        print(outgoing[0])
         if outgoing is not None:
             embed.add_field(
                 name="Outgoing",
