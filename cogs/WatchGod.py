@@ -3,6 +3,8 @@ from MyBot import MyBot
 from watchgod import awatch
 from watchgod.watcher import Change
 
+import os
+
 class WatchGod(commands.Cog):
     def __init__(self, bot: MyBot):
         self.bot = bot
@@ -14,7 +16,7 @@ class WatchGod(commands.Cog):
                 if change:
                     c = change.pop()
                     if c[1].endswith(".py"):
-                        fn = c[1].split("\\")[-1].replace('.py', '')
+                        fn = os.path.basename(c[1])
                         cfn = f'cogs.{fn}'
 
                         print(f"{cfn} - {cfn in self.bot.extensions} - {c[0]}")
