@@ -17,7 +17,7 @@ class WatchGod(commands.Cog):
                     c = change.pop()
                     if c[1].endswith(".py"):
                         fn = os.path.basename(c[1])
-                        cfn = f'cogs.{fn}'
+                        cfn = f'cogs.{fn.replace(".py", "")}'
 
                         print(f"{cfn} - {cfn in self.bot.extensions} - {c[0]}")
 
