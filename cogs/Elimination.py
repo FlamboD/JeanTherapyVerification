@@ -104,7 +104,7 @@ class Elimination(commands.Cog):
                       direction: typing.Literal["incoming", "outgoing", "both"]):
         def title(name: EliminationTeams):
             return name.name.replace('-', ' ').title()
-        print("A")
+        print("~A")
         embed = discord.Embed(color=self.bot.JEAN_COLOR, title=f"{title(team)}", description="Attacks between " + " and ".join(
             [f"<t:{int(_.timestamp())}:T>" for _ in SQL.past_hour()]))
         incoming = None
