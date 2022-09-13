@@ -104,12 +104,13 @@ class Elimination(commands.Cog):
                       direction: typing.Literal["incoming", "outgoing", "both"]):
         def title(name: EliminationTeams):
             return name.name.replace('-', ' ').title()
-        print("~A")
+
         embed = discord.Embed(color=self.bot.JEAN_COLOR, title=f"{title(team)}", description="Attacks between " + " and ".join(
             [f"<t:{int(_.timestamp())}:T>" for _ in SQL.past_hour()]))
+
         incoming = None
         outgoing = None
-        print("B")
+
         if direction == 'both':
             incoming = SQL().get_attacks(team.value, True)
             outgoing = SQL().get_attacks(team.value, False)
@@ -117,9 +118,8 @@ class Elimination(commands.Cog):
             incoming = SQL().get_attacks(team.value, True)
         else:
             outgoing = SQL().get_attacks(team.value, False)
-        print("C")
+
         br = "\n"
-        print(incoming[0])
         if incoming is not None:
             embed.add_field(
                 name="Incoming",
@@ -129,7 +129,7 @@ class Elimination(commands.Cog):
                       f"Total: {len(incoming)}"
                       f"```"
             )
-        print("D")
+
         if outgoing is not None:
             embed.add_field(
                 name="Outgoing",
@@ -139,9 +139,8 @@ class Elimination(commands.Cog):
                       f"Total: {len(outgoing)}"
                       f"```"
             )
-        print("F")
+
         await interaction.reply(embed=embed)
-        print("G")
 
     @attacks.error
     async def on_attacks_error(self, interaction: commands.Context, error: commands.CommandError):
